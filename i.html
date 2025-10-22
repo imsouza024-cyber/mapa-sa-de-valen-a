@@ -2,19 +2,14 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <title>Mapa de Saúde (Cores em PT-BR) - Valença RJ</title>
+    <title>Mapa de Saúde (Clique Sobre Área vFinal) - Valença RJ</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1976d2">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
     <style>
@@ -30,6 +25,7 @@
       .form-container label { font-size: 14px; margin-bottom: -4px; }
       .form-container input, .form-container select, .form-container button { padding: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
       .form-container button { background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer; }
+      .popup-remover-btn { background-color: #f44336; color: white; margin-top: 8px; padding: 5px; border: none; border-radius: 3px; cursor: pointer; width: 100%; }
       .modal-backdrop { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
       .modal-content { background-color: #fefefe; padding: 20px; border-radius: 8px; width: 300px; }
       .modal-content h3 { margin-top: 0; }
@@ -43,355 +39,184 @@
       .leaflet-control-text-buttons .leaflet-bar { padding: 5px 10px; font-size: 14px; font-family: Arial, sans-serif; font-weight: bold; text-align: center; text-decoration: none; color: #333; border-radius: 4px; }
       .leaflet-control-text-buttons .leaflet-bar:hover { background-color: #f4f4f4; }
       .leaflet-control-text-buttons .leaflet-bar.modo-paciente-ativo { background-color: #c8e6c9; color: #255727; }
+      #btn-cancelar-desenho { background-color: #f44336; color: white; }
       .leaflet-draw-toolbar { display: none; }
     </style>
-  <head>
-  <meta charset="utf-8" />
-  <title>Mapa de Saúde (PWA) - Valença RJ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="manifest" href="manifest.json">
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  </script>
-  
-  <style>
-    /* ... seu CSS ... */
-  </style>
-</head>
+  </head>
 
   <body>
     <div id="map"></div>
 
+     <div id="modal-comorb-backdrop" class="modal-backdrop">...</div>
+     <div id="modal-acs-backdrop" class="modal-backdrop">...</div>
      <div id="modal-comorb-backdrop" class="modal-backdrop">
-      <div class="modal-content">
-        <h3>Adicionar Nova Comorbidade</h3>
-        <form id="form-nova-comorbidade">
-          <label for="nova-comorb-nome">Nome:</label>
-          <input type="text" id="nova-comorb-nome" placeholder="Ex: Asma" required>
-          <label for="nova-comorb-corIcone">Cor do Ícone:</label>
-          <input type="text" id="nova-comorb-corIcone" placeholder="Use nome em inglês (red) ou código (#FF0000)" required>
-          <label for="nova-comorb-corRota">Cor da Rota (Paciente):</label>
-          <input type="text" id="nova-comorb-corRota" placeholder="Use nome em inglês (red) ou código (#FF0000)" required>
-          <div class="modal-botoes">
-            <button type="button" id="botao-comorb-cancelar" class="botao-cancelar">Cancelar</button>
-            <button type="submit" id="botao-comorb-salvar" class="botao-salvar">Salvar</button>
-          </div>
-        </form>
-      </div>
+      <div class="modal-content"><h3>Adicionar Nova Comorbidade</h3><form id="form-nova-comorbidade"><label for="nova-comorb-nome">Nome:</label><input type="text" id="nova-comorb-nome" placeholder="Ex: Asma" required><label for="nova-comorb-corIcone">Cor do Ícone:</label><input type="text" id="nova-comorb-corIcone" placeholder="Use nome em inglês (red) ou código (#FF0000)" required><label for="nova-comorb-corRota">Cor da Rota (Paciente):</label><input type="text" id="nova-comorb-corRota" placeholder="Use nome em inglês (red) ou código (#FF0000)" required><div class="modal-botoes"><button type="button" id="botao-comorb-cancelar" class="botao-cancelar">Cancelar</button><button type="submit" id="botao-comorb-salvar" class="botao-salvar">Salvar</button></div></form></div>
     </div>
     <div id="modal-acs-backdrop" class="modal-backdrop">
-      <div class="modal-content">
-        <h3>Adicionar Área do Agente (ACS)</h3>
-        <p>Por favor, informe os dados do agente para a área criada:</p>
-        <form id="form-novo-acs">
-          <label for="nova-acs-nome">Nome do Agente (ACS):</label>
-          <input type="text" id="nova-acs-nome" placeholder="Ex: Maria Silva" required>
-          <label for="nova-acs-cor">Cor da Área (Agente):</label>
-          <input type="text" id="nova-acs-cor" placeholder="Use nome em inglês (blue) ou código (#0000FF)" required>
-          <div class="modal-botoes">
-            <button type="button" id="botao-acs-cancelar" class="botao-cancelar">Cancelar</button>
-            <button type="submit" id="botao-acs-salvar" class="botao-salvar">Salvar</button>
-          </div>
-        </form>
-      </div>
+      <div class="modal-content"><h3>Adicionar Área do Agente (ACS)</h3><p>Informe os dados do agente:</p><form id="form-novo-acs"><label for="nova-acs-nome">Nome do Agente (ACS):</label><input type="text" id="nova-acs-nome" placeholder="Ex: Maria Silva" required><label for="nova-acs-cor">Cor da Área (Agente):</label><input type="text" id="nova-acs-cor" placeholder="Use nome em inglês (blue) ou código (#0000FF)" required><div class="modal-botoes"><button type="button" id="botao-acs-cancelar" class="botao-cancelar">Cancelar</button><button type="submit" id="botao-acs-salvar" class="botao-salvar">Salvar</button></div></form></div>
     </div>
 
     <script>
       // 1️⃣ Inicialização do mapa
-      var centerLat = -22.2297562;
-      var centerLng = -43.7085038;
-      var centerPoint = [centerLat, centerLng];
-      var lat_offset = 0.003; 
-      var lng_offset = 0.004; 
-      var southWest = L.latLng(centerLat - lat_offset, centerLng - lng_offset);
-      var northEast = L.latLng(centerLat + lat_offset, centerLng + lng_offset);
+      var centerLat = -22.2297562, centerLng = -43.7085038, centerPoint = [centerLat, centerLng];
+      var lat_offset = 0.003, lng_offset = 0.004;
+      var southWest = L.latLng(centerLat - lat_offset, centerLng - lng_offset), northEast = L.latLng(centerLat + lat_offset, centerLng + lng_offset);
       var bounds = L.latLngBounds(southWest, northEast);
-      var mapZoom = 17; 
+      var mapZoom = 17;
+      var map = L.map("map", { center: centerPoint, zoom: mapZoom, maxBounds: bounds, minZoom: mapZoom - 1 });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
 
-      var map = L.map("map", {
-          center: centerPoint,
-          zoom: mapZoom, 
-          maxBounds: bounds,   
-          minZoom: mapZoom - 1 
-      });
-      
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19, 
-        attribution: "© OpenStreetMap",
-      }).addTo(map);
+      // --- Salvamento/Carregamento ---
+      const STORAGE_KEYS = { COMORBIDADES: 'mapaSaude_comorbidades_v1', AGENTES: 'mapaSaude_agentes_v1', PACIENTES: 'mapaSaude_pacientes_v1' };
+      function saveData() { try { localStorage.setItem(STORAGE_KEYS.COMORBIDADES, JSON.stringify(comorbidadesConfig)); localStorage.setItem(STORAGE_KEYS.AGENTES, JSON.stringify(agentesConfig)); localStorage.setItem(STORAGE_KEYS.PACIENTES, JSON.stringify(pacientes)); console.log("Dados salvos."); } catch (e) { console.error("Erro salvar:", e); alert("Erro ao salvar."); } }
+      function loadData() { try { const sc = localStorage.getItem(STORAGE_KEYS.COMORBIDADES); const sa = localStorage.getItem(STORAGE_KEYS.AGENTES); const sp = localStorage.getItem(STORAGE_KEYS.PACIENTES); comorbidadesConfig = sc ? JSON.parse(sc) : { ...defaultComorbidades }; agentesConfig = sa ? JSON.parse(sa) : {}; pacientes = sp ? JSON.parse(sp) : []; console.log("Dados carregados."); } catch (e) { console.error("Erro carregar:", e); alert("Erro carregar. Usando padrão."); comorbidadesConfig = { ...defaultComorbidades }; agentesConfig = {}; pacientes = []; } }
+      // --- Fim Salvamento/Carregamento ---
 
-      // --- Funções de Salvamento/Carregamento ---
-      const STORAGE_KEYS = {
-          COMORBIDADES: 'mapaSaude_comorbidades_v1', 
-          AGENTES: 'mapaSaude_agentes_v1',
-          PACIENTES: 'mapaSaude_pacientes_v1'
-      };
+      // 2️⃣ Comorbidades
+      var defaultComorbidades = { diabetes: { nome: "Diabetes", corIcone: "#FF0000", corRotaPaciente: "red" }, hipertensao: { nome: "Hipertensão", corIcone: "#0000FF", corRotaPaciente: "blue" }, };
+      var comorbidadesConfig = {};
 
-      function saveData() {
-          try {
-              localStorage.setItem(STORAGE_KEYS.COMORBIDADES, JSON.stringify(comorbidadesConfig));
-              localStorage.setItem(STORAGE_KEYS.AGENTES, JSON.stringify(agentesConfig));
-              localStorage.setItem(STORAGE_KEYS.PACIENTES, JSON.stringify(pacientes));
-              console.log("Dados salvos no LocalStorage.");
-          } catch (e) {
-              console.error("Erro ao salvar dados no LocalStorage:", e);
-              alert("Erro ao salvar os dados.");
-          }
-      }
+      // 3️⃣ Agentes
+      var agentesConfig = {};
 
-      function loadData() {
-          try {
-              const savedComorbidades = localStorage.getItem(STORAGE_KEYS.COMORBIDADES);
-              const savedAgentes = localStorage.getItem(STORAGE_KEYS.AGENTES);
-              const savedPacientes = localStorage.getItem(STORAGE_KEYS.PACIENTES);
-
-              comorbidadesConfig = savedComorbidades ? JSON.parse(savedComorbidades) : { ...defaultComorbidades };
-              agentesConfig = savedAgentes ? JSON.parse(savedAgentes) : {};
-              pacientes = savedPacientes ? JSON.parse(savedPacientes) : [];
-
-              console.log("Dados carregados.");
-
-          } catch (e) {
-              console.error("Erro ao carregar dados:", e);
-              alert("Erro ao carregar dados salvos. Usando dados padrão.");
-              comorbidadesConfig = { ...defaultComorbidades };
-              agentesConfig = {};
-              pacientes = [];
-          }
-      }
-      // --------------------------------------------------
-
-      // 2️⃣ CONFIGURAÇÃO DE COMORBIDADES (Valores Padrão)
-      // Mantém cores em inglês/hex para compatibilidade CSS
-      var defaultComorbidades = {
-        diabetes: { nome: "Diabetes", corIcone: "#FF0000", corRotaPaciente: "red" },
-        hipertensao: { nome: "Hipertensão", corIcone: "#0000FF", corRotaPaciente: "blue" },
-      };
-      var comorbidadesConfig = {}; 
-
-      // 3️⃣ CONFIGURAÇÃO DE AGENTES (ACS) (Começa Vazio)
-      var agentesConfig = {}; 
-      
-      // 4️⃣ "Camadas" (Layers) de Controle
+      // 4️⃣ Layers
       var pacientesLayerGroup = L.layerGroup().addTo(map);
       var rotasPacientesLayerGroup = L.layerGroup().addTo(map);
-      var areasAcsLayerGroup = L.layerGroup().addTo(map); 
+      var areasAcsLayerGroup = L.layerGroup().addTo(map);
 
-      // 5️⃣ Funções dos PACIENTES
-      function corRotaPorComorbidade(comorbKey) {
-        return comorbidadesConfig[comorbKey] ? comorbidadesConfig[comorbKey].corRotaPaciente : "gray";
-      }
-      function desenharTodasRotasPacientes() {
-        rotasPacientesLayerGroup.clearLayers(); 
-        for (let i = 0; i < pacientes.length - 1; i++) {
-          let p1 = pacientes[i]; let p2 = pacientes[i + 1];
-          L.polyline([p1.coords, p2.coords], {
-            color: corRotaPorComorbidade(p2.comorbidade), weight: 4,
-          }).addTo(rotasPacientesLayerGroup);
-        }
-      }
-      function removerPaciente(pacienteId) {
-        pacientes = pacientes.filter(p => p.id !== pacienteId);
-        pacientesLayerGroup.eachLayer(layer => {
-          if (layer.pacienteId === pacienteId) pacientesLayerGroup.removeLayer(layer);
-        });
-        desenharTodasRotasPacientes();
-        saveData(); 
-      }
-      var pacientes = []; 
-      function adicionarPaciente(nome, comorbidadeKey, lat, lng) {
-        var coords = [lat, lng];
-        var pacienteId = Date.now(); 
-        pacientes.push({ id: pacienteId, nome: nome, comorbidade: comorbidadeKey, coords: coords });
-        var config = comorbidadesConfig[comorbidadeKey];
-        var marker = L.circleMarker(coords, {
-          radius: 8, fillColor: config.corIcone || 'gray', color: "#000",
-          weight: 1, opacity: 1, fillOpacity: 0.9
-        });
-        marker.pacienteId = pacienteId; 
-        marker.bindPopup(`<b>${nome}</b><br>Comorbidade: ${config.nome}<br><small>Clique direito para remover</small>`);
-        marker.on('contextmenu', e => { L.DomEvent.preventDefault(e); removerPaciente(pacienteId); });
-        pacientesLayerGroup.addLayer(marker);
-        desenharTodasRotasPacientes();
-        saveData(); 
-      }
+      // Modos
+      var modoAdicionarPacienteAtivo = false;
+      var modoDesenhoACSAtivo = false;
 
-      function redesenharPacientes() {
-          pacientesLayerGroup.clearLayers(); 
-          pacientes.forEach(p => {
-              var config = comorbidadesConfig[p.comorbidade];
-              if (!config) { 
-                  console.warn("Comorbidade não encontrada para paciente:", p);
-                  return; 
-              }
-              var marker = L.circleMarker(p.coords, {
-                  radius: 8, fillColor: config.corIcone || 'gray', color: "#000",
-                  weight: 1, opacity: 1, fillOpacity: 0.9
-              });
-              marker.pacienteId = p.id;
-              marker.bindPopup(`<b>${p.nome}</b><br>Comorbidade: ${config.nome}<br><small>Clique direito para remover</small>`);
-              marker.on('contextmenu', e => { L.DomEvent.preventDefault(e); removerPaciente(p.id); });
-              pacientesLayerGroup.addLayer(marker);
-          });
-          desenharTodasRotasPacientes(); 
-      }
+      // 5️⃣ Funções Pacientes
+      function corRotaPorComorbidade(comorbKey) { return comorbidadesConfig[comorbKey] ? comorbidadesConfig[comorbKey].corRotaPaciente : "gray"; }
+      function desenharTodasRotasPacientes() { rotasPacientesLayerGroup.clearLayers(); for (let i = 0; i < pacientes.length - 1; i++) { let p1 = pacientes[i]; let p2 = pacientes[i + 1]; L.polyline([p1.coords, p2.coords], { color: corRotaPorComorbidade(p2.comorbidade), weight: 4 }).addTo(rotasPacientesLayerGroup); } }
+      function removerPaciente(pacienteId) { pacientes = pacientes.filter(p => p.id !== pacienteId); pacientesLayerGroup.eachLayer(layer => { if (layer.pacienteId === pacienteId) pacientesLayerGroup.removeLayer(layer); }); desenharTodasRotasPacientes(); saveData(); }
+      function adicionarPaciente(nome, comorbidadeKey, lat, lng) { var coords = [lat, lng]; var pacienteId = Date.now(); pacientes.push({ id: pacienteId, nome: nome, comorbidade: comorbidadeKey, coords: coords }); var config = comorbidadesConfig[comorbidadeKey]; var marker = L.circleMarker(coords, { radius: 8, fillColor: config.corIcone || 'gray', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 }); marker.pacienteId = pacienteId; marker.bindPopup(`<b>${nome}</b><br>Comorbidade: ${config.nome}<br><small>Clique direito para remover</small>`); marker.on('contextmenu', e => { L.DomEvent.preventDefault(e); removerPaciente(pacienteId); }); pacientesLayerGroup.addLayer(marker); desenharTodasRotasPacientes(); saveData(); }
+      function redesenharPacientes() { pacientesLayerGroup.clearLayers(); pacientes.forEach(p => { var config = comorbidadesConfig[p.comorbidade]; if (!config) { console.warn("Comorbidade não encontrada:", p); return; } var marker = L.circleMarker(p.coords, { radius: 8, fillColor: config.corIcone || 'gray', color: "#000", weight: 1, opacity: 1, fillOpacity: 0.9 }); marker.pacienteId = p.id; marker.bindPopup(`<b>${p.nome}</b><br>Comorbidade: ${config.nome}<br><small>Clique direito para remover</small>`); marker.on('contextmenu', e => { L.DomEvent.preventDefault(e); removerPaciente(p.id); }); pacientesLayerGroup.addLayer(marker); }); desenharTodasRotasPacientes(); }
 
-      // 6️⃣ Funções dos AGENTES (ACS) - Áreas (Polígonos)
-      function removerAreaAcs(e) {
-        var layer = e.target;
-        var key = layer.acsKey;
-        var geojson = layer.areaGeoJSON;
-        if (agentesConfig[key] && agentesConfig[key].areasGeoJSON) {
-            agentesConfig[key].areasGeoJSON = agentesConfig[key].areasGeoJSON.filter(r => 
-                JSON.stringify(r.geometry.coordinates) !== JSON.stringify(geojson.geometry.coordinates)
-            );
-            areasAcsLayerGroup.removeLayer(layer);
-            if (agentesConfig[key].areasGeoJSON.length === 0) {
-                delete agentesConfig[key];
-            }
-            atualizarLegenda(); 
-            saveData(); 
-        } else {
-            console.error("Erro ao remover área: Agente ou área não encontrada nos dados.", key, geojson);
-            areasAcsLayerGroup.removeLayer(layer); 
-        }
-      }
-
+      // 6️⃣ Funções Agentes (ACS)
+      function removerAreaAcsPorDados(key, geojsonString) { let layerToRemove = null; areasAcsLayerGroup.eachLayer(layer => { if (layer.acsKey === key && JSON.stringify(layer.areaGeoJSON) === geojsonString) { layerToRemove = layer; } }); if (layerToRemove) { areasAcsLayerGroup.removeLayer(layerToRemove); } else { console.warn("Layer não encontrada."); } if (agentesConfig[key] && agentesConfig[key].areasGeoJSON) { agentesConfig[key].areasGeoJSON = agentesConfig[key].areasGeoJSON.filter(r => JSON.stringify(r) !== geojsonString ); if (agentesConfig[key].areasGeoJSON.length === 0) { delete agentesConfig[key]; } atualizarLegenda(); saveData(); } else { console.error("Erro remover área dados:", key); } map.closePopup(); }
+      
+      // *** CORREÇÃO AQUI ***
       function desenharAreaAcs(key, areaGeoJSON) {
-          if (!agentesConfig[key]) {
-              console.error("Tentando desenhar área para agente inexistente:", key);
-              return;
-          }
+          if (!agentesConfig[key]) { console.error("Agente inexistente:", key); return; }
           var cor = agentesConfig[key].cor;
           var nome = agentesConfig[key].nome;
           var areaLayer = L.geoJSON(areaGeoJSON, {
-          style: { 
-              color: cor, weight: 3, opacity: 0.7,
-              fillColor: cor, fillOpacity: 0.2 
-          }
+             style: { color: cor, weight: 3, opacity: 0.7, fillColor: cor, fillOpacity: 0.2 }
           });
           areaLayer.acsKey = key;
-          areaLayer.areaGeoJSON = areaGeoJSON; 
-          areaLayer.bindPopup(`<b>Agente:</b> ${nome}<br><small>Clique direito para remover área</small>`);
-          areaLayer.on('contextmenu', removerAreaAcs);
+          areaLayer.areaGeoJSON = areaGeoJSON;
+
+          areaLayer.on('click', function(e) {
+              // *** CORREÇÃO: Impede popup da área E DEIXA O CLIQUE PASSAR se estiver adicionando paciente ***
+              if (modoAdicionarPacienteAtivo) {
+                   // L.DomEvent.stopPropagation(e); // << REMOVIDO: Deixa o clique passar para o mapa
+                   return; // Não faz mais nada aqui
+              }
+
+              // Se não está adicionando paciente, abre o popup da área
+              let popupContent;
+              if (modoDesenhoACSAtivo) { // Mostra remover se estiver editando ACS
+                  popupContent = `<b>Agente:</b> ${nome}<br>` +
+                                 `<button class="popup-remover-btn" data-key="${key}" data-geojson='${JSON.stringify(areaGeoJSON)}'>Remover Área</button>`;
+              } else { // Modo normal: só info
+                  popupContent = `<b>Agente:</b> ${nome}`;
+              }
+
+              L.popup()
+                  .setLatLng(e.latlng)
+                  .setContent(popupContent)
+                  .openOn(map);
+
+              // Impede que o clique chegue ao mapa APENAS se abriu o popup da área
+              L.DomEvent.stopPropagation(e);
+          });
           areasAcsLayerGroup.addLayer(areaLayer);
       }
+      // *** FIM DA CORREÇÃO ***
 
-      function carregarEdesenharAreas() { 
-          areasAcsLayerGroup.clearLayers(); 
-          for (var key in agentesConfig) {
-              if (agentesConfig[key] && Array.isArray(agentesConfig[key].areasGeoJSON)) {
-                  agentesConfig[key].areasGeoJSON.forEach(area => {
-                      if (area && area.geometry && area.geometry.coordinates) {
-                          desenharAreaAcs(key, area);
-                      } else {
-                          console.warn("GeoJSON de área inválido para agente:", key, area);
-                      }
-                  });
-              } else {
-                  if (agentesConfig[key]) {
-                     agentesConfig[key].areasGeoJSON = [];
-                  }
-                  console.warn("Estrutura de dados inválida para agente:", key);
-              }
-          }
-      }
+      function carregarEdesenharAreas() { areasAcsLayerGroup.clearLayers(); for (var key in agentesConfig) { if (agentesConfig[key] && Array.isArray(agentesConfig[key].areasGeoJSON)) { agentesConfig[key].areasGeoJSON.forEach(area => { if (area && area.geometry && area.geometry.coordinates) { desenharAreaAcs(key, area); } else { console.warn("GeoJSON inválido:", key, area); } }); } else { if (agentesConfig[key]) { agentesConfig[key].areasGeoJSON = []; } console.warn("Estrutura inválida:", key); } } }
 
-      // 7️⃣ Função de Clique para Adicionar Paciente
-      function onMapaClickPaciente(e) {
-        if (e.originalEvent.target.classList.contains("leaflet-marker-icon") || 
-            e.originalEvent.target.tagName === "svg" || 
-            e.originalEvent.target.tagName === "path" || 
-            e.originalEvent.target.closest(".leaflet-control")) { 
-          map.once('click', onMapaClickPaciente); 
-          return; 
+      // 7️⃣ Função Abrir Popup Paciente
+      function abrirPopupPaciente(e) {
+         // Verifica só se clicou em um controle ou DENTRO de um popup
+         if (e.originalEvent.target.closest(".leaflet-control") ||
+             e.originalEvent.target.closest(".leaflet-popup-content-wrapper")) {
+           // Não faz nada, apenas reseta o modo para esperar próximo clique válido
+           ativarModoPaciente(true); // Reativa modo para próximo clique
+           return;
         }
-        
+
         var lat = e.latlng.lat, lng = e.latlng.lng;
         var container = L.DomUtil.create("div", "form-container");
-        var labelNome = L.DomUtil.create("label", "", container);
-        labelNome.innerHTML = "Nome:";
-        var inputNome = L.DomUtil.create("input", "", container);
-        inputNome.type = "text"; inputNome.placeholder = "Nome do paciente";
-        var labelComorb = L.DomUtil.create("label", "", container);
-        labelComorb.innerHTML = "Comorbidade:";
-        var selectComorb = L.DomUtil.create("select", "", container);
-        for (var key in comorbidadesConfig) { 
-          var config = comorbidadesConfig[key];
-          var option = L.DomUtil.create("option", "", selectComorb);
-          option.value = key; option.innerHTML = config.nome;
-        }
-        var buttonAdd = L.DomUtil.create("button", "", container);
-        buttonAdd.type = "button"; buttonAdd.innerHTML = "Adicionar";
-        
+        var labelNome = L.DomUtil.create("label", "", container); labelNome.innerHTML = "Nome:"; var inputNome = L.DomUtil.create("input", "", container); inputNome.type = "text"; inputNome.placeholder = "Nome"; var labelComorb = L.DomUtil.create("label", "", container); labelComorb.innerHTML = "Comorbidade:"; var selectComorb = L.DomUtil.create("select", "", container); for (var key in comorbidadesConfig) { var config = comorbidadesConfig[key]; var option = L.DomUtil.create("option", "", selectComorb); option.value = key; option.innerHTML = config.nome; } var buttonAdd = L.DomUtil.create("button", "", container); buttonAdd.type = "button"; buttonAdd.innerHTML = "Adicionar";
         var popup = L.popup().setLatLng(e.latlng).setContent(container).openOn(map);
-        
-        popup.on('remove', function() {
-          resetarBotoesPaciente(); 
-        });
-
-        L.DomEvent.on(buttonAdd, "click", function () {
-            var nome = inputNome.value, comorbidadeKey = selectComorb.value;
-            if (nome && comorbidadeKey) {
-              adicionarPaciente(nome, comorbidadeKey, lat, lng);
-              map.closePopup(popup); 
-            } else if (!nome) inputNome.style.border = "2px solid red";
-        });
+        popup.on('remove', function() { resetarBotoesTodos(); }); // Reseta tudo
+        L.DomEvent.on(buttonAdd, "click", function () { var nome = inputNome.value, comorbidadeKey = selectComorb.value; if (nome && comorbidadeKey) { adicionarPaciente(nome, comorbidadeKey, lat, lng); map.closePopup(popup); } else if (!nome) inputNome.style.border = "2px solid red"; });
+        // Desativa o modo imediatamente após abrir o popup
+        modoAdicionarPacienteAtivo = false; // <<< CORREÇÃO AQUI
+        // map.off('click', onMapaClickGeral); // Listener geral continua ativo
       }
-      
+
       // 8️⃣ Legenda
       var legend = L.control({ position: "bottomright" });
-      function gerarConteudoLegenda() {
-        var html = "<h4>Áreas (Agentes)</h4>"; 
-        for (var key in agentesConfig) { 
-          var config = agentesConfig[key];
-          html += `<div><span class="color-box route-shape" style="background-color: ${config.cor}; border-color: ${config.cor};"></span>${config.nome}</div>`;
-        }
-        html += "<h4 style='margin-top: 10px;'>Pacientes (Comorbidades)</h4>";
-        for (var key in comorbidadesConfig) { 
-          var config = comorbidadesConfig[key];
-          html += `<div><span class="color-box icon-shape" style="background-color: ${config.corIcone};"></span> ${config.nome}</div>`;
-        }
-        return html;
-      }
-      function atualizarLegenda() {
-        if (legend.getContainer()) legend.getContainer().innerHTML = gerarConteudoLegenda();
-      }
-      legend.onAdd = function (map) {
-        var div = L.DomUtil.create("div", "info legend");
-        return div;
-      };
+      function gerarConteudoLegenda() { var html = "<h4>Áreas (Agentes)</h4>"; for (var key in agentesConfig) { var config = agentesConfig[key]; html += `<div><span class="color-box route-shape" style="background-color: ${config.cor}; border-color: ${config.cor};"></span>${config.nome}</div>`; } html += "<h4 style='margin-top: 10px;'>Pacientes (Comorbidades)</h4>"; for (var key in comorbidadesConfig) { var config = comorbidadesConfig[key]; html += `<div><span class="color-box icon-shape" style="background-color: ${config.corIcone};"></span> ${config.nome}</div>`; } return html; }
+      function atualizarLegenda() { if (legend.getContainer()) legend.getContainer().innerHTML = gerarConteudoLegenda(); }
+      legend.onAdd = function (map) { var div = L.DomUtil.create("div", "info legend"); return div; };
       legend.addTo(map);
 
-      // 9️⃣ Controles de Ferramentas (com Leaflet.draw)
-      var btnComorb, btnAcs, btnPaciente; 
-      var drawHandler = null; 
+      // 9️⃣ Controles de Ferramentas
+      var btnComorb, btnAcs, btnPaciente, btnCancelarDesenho;
+      var drawHandler = null;
 
-      function resetarBotoesPaciente() {
-          if (btnPaciente) {
-            btnPaciente.innerHTML = "Adicionar Paciente";
-            btnPaciente.classList.remove("modo-paciente-ativo");
-          }
+      function resetarBotoesTodos() {
+          if (btnPaciente) { btnPaciente.innerHTML = "Adicionar Paciente"; btnPaciente.classList.remove("modo-paciente-ativo"); }
+          if (btnAcs) { btnAcs.innerHTML = "Adicionar Área ACS"; }
           if (btnAcs) btnAcs.style.display = "block";
           if (btnComorb) btnComorb.style.display = "block";
-          map.off('click', onMapaClickPaciente); 
-      }
-      
-      function resetarBotoesAcs() { 
           if (btnPaciente) btnPaciente.style.display = "block";
-          if (btnAcs) {
-              btnAcs.innerHTML = "Adicionar Área ACS"; 
-              btnAcs.style.display = "block";
+          if (btnCancelarDesenho) btnCancelarDesenho.style.display = "none";
+          if (drawHandler) { drawHandler.disable(); drawHandler = null; }
+          // Garante que modos estão desligados
+          modoAdicionarPacienteAtivo = false;
+          modoDesenhoACSAtivo = false;
+          // map.off('click', onMapaClickGeral); // Listener geral fica sempre ativo
+      }
+
+      function ativarModoPaciente(reativando = false) {
+          resetarBotoesTodos();
+          modoAdicionarPacienteAtivo = true; // LIGA modo paciente
+          modoDesenhoACSAtivo = false;
+
+          if (!reativando) {
+              btnPaciente.innerHTML = "Clique no mapa...";
+              btnPaciente.classList.add("modo-paciente-ativo");
+              btnAcs.style.display = "none";
+              btnComorb.style.display = "none";
           }
-          if (btnComorb) btnComorb.style.display = "block";
-          
-          if (drawHandler) {
-            drawHandler.disable(); 
-            drawHandler = null;
-          }
-          map.off('click', onMapaClickPaciente); 
+          // O listener GERAL map.on('click', onMapaClickGeral) tratará o clique
+      }
+
+      // Não precisamos mais de desativarModoPaciente separado
+
+      function ativarModoACS() {
+          resetarBotoesTodos();
+          modoAdicionarPacienteAtivo = false;
+          modoDesenhoACSAtivo = true; // LIGA modo ACS
+
+          btnComorb.style.display = "none";
+          btnPaciente.style.display = "none";
+          btnAcs.innerHTML = "Desenhando...";
+          btnAcs.style.display = "block";
+          btnCancelarDesenho.style.display = "block";
+
+          drawHandler = new L.Draw.Polygon(map, { shapeOptions: { color: '#FF00FF', weight: 3, opacity: 0.7, fillColor: '#FF00FF', fillOpacity: 0.2 } });
+          drawHandler.enable();
+
+          map.once('draw:drawstop', function(e) { resetarBotoesTodos(); }); // Reseta TUDO
+          map.once('draw:created', function(e) { var layer = e.layer; tempAreaGeoJSON = layer.toGeoJSON(); mostrarModalAcs(); });
       }
 
       var toolControls = L.control({ position: "topleft" });
@@ -399,165 +224,56 @@
       toolControls.onAdd = function (map) {
           var container = L.DomUtil.create("div", "leaflet-control-text-buttons");
           L.DomEvent.disableClickPropagation(container);
-
-          btnComorb = L.DomUtil.create("a", "leaflet-bar", container);
-          btnComorb.href = "#";
-          btnComorb.title = "Adicionar nova doença/comorbidade";
-          btnComorb.innerHTML = "Adicionar Doença"; 
-          L.DomEvent.on(btnComorb, "click", e => {
-              L.DomEvent.preventDefault(e);
-              resetarBotoesPaciente(); 
-              resetarBotoesAcs(); 
-              modalComorbBackdrop.style.display = "flex"; 
-          });
-
-          btnAcs = L.DomUtil.create("a", "leaflet-bar", container);
-          btnAcs.href = "#";
-          btnAcs.title = "Desenhar área de atuação de Agente (ACS) no mapa";
-          btnAcs.innerHTML = "Adicionar Área ACS"; 
-
-          btnPaciente = L.DomUtil.create("a", "leaflet-bar", container);
-          btnPaciente.href = "#";
-          btnPaciente.title = "Adicionar paciente ao mapa";
-          btnPaciente.innerHTML = "Adicionar Paciente";
-          
-          L.DomEvent.on(btnAcs, "click", e => {
-              L.DomEvent.preventDefault(e);
-              resetarBotoesPaciente(); 
-              
-              btnComorb.style.display = "none";
-              btnPaciente.style.display = "none";
-              btnAcs.innerHTML = "Desenhando Área..."; 
-              btnAcs.style.display = "block"; 
-              
-              drawHandler = new L.Draw.Polygon(map, {
-                  shapeOptions: { color: '#FF00FF', weight: 3, opacity: 0.7, fillColor: '#FF00FF', fillOpacity: 0.2 } 
-              });
-              drawHandler.enable();
-              
-              map.once('draw:drawstop', function(e) {
-                resetarBotoesAcs();
-              });
-              map.once('draw:created', function(e) {
-                var layer = e.layer;
-                tempAreaGeoJSON = layer.toGeoJSON(); 
-                mostrarModalAcs();
-              });
-          });
-          
-          L.DomEvent.on(btnPaciente, "click", e => {
-              L.DomEvent.preventDefault(e);
-              resetarBotoesAcs(); 
-              
-              btnPaciente.innerHTML = "Clique no mapa...";
-              btnPaciente.classList.add("modo-paciente-ativo");
-              btnAcs.style.display = "none";
-              btnComorb.style.display = "none";
-              map.once('click', onMapaClickPaciente);
-          });
-
+          btnComorb = L.DomUtil.create("a", "leaflet-bar", container); btnComorb.href = "#"; btnComorb.title = "Adicionar doença"; btnComorb.innerHTML = "Adicionar Doença";
+          L.DomEvent.on(btnComorb, "click", e => { L.DomEvent.preventDefault(e); resetarBotoesTodos(); modalComorbBackdrop.style.display = "flex"; });
+          btnAcs = L.DomUtil.create("a", "leaflet-bar", container); btnAcs.href = "#"; btnAcs.title = "Desenhar área ACS"; btnAcs.innerHTML = "Adicionar Área ACS";
+          btnPaciente = L.DomUtil.create("a", "leaflet-bar", container); btnPaciente.href = "#"; btnPaciente.title = "Adicionar paciente"; btnPaciente.innerHTML = "Adicionar Paciente";
+          btnCancelarDesenho = L.DomUtil.create("a", "leaflet-bar", container); btnCancelarDesenho.href = "#"; btnCancelarDesenho.id = "btn-cancelar-desenho"; btnCancelarDesenho.title = "Cancelar desenho"; btnCancelarDesenho.innerHTML = "Cancelar Desenho"; btnCancelarDesenho.style.display = "none";
+          L.DomEvent.on(btnAcs, "click", e => { L.DomEvent.preventDefault(e); ativarModoACS(); });
+          L.DomEvent.on(btnPaciente, "click", e => { L.DomEvent.preventDefault(e); ativarModoPaciente(); });
+          L.DomEvent.on(btnCancelarDesenho, "click", e => { L.DomEvent.preventDefault(e); if (drawHandler) { drawHandler.disable(); } }); // Reset é chamado pelo drawstop
           return container;
       };
       toolControls.addTo(map);
 
 
-      // 10️⃣ Lógica do Modal de Comorbidade
-      var modalComorbBackdrop = document.getElementById("modal-comorb-backdrop");
-      var formNovaComorbidade = document.getElementById("form-nova-comorbidade");
-      function esconderModalComorb() {
-        modalComorbBackdrop.style.display = "none";
-        formNovaComorbidade.reset();
-      }
-      document.getElementById("botao-comorb-cancelar").addEventListener("click", esconderModalComorb);
-      formNovaComorbidade.addEventListener("submit", function(e) {
-        e.preventDefault();
-        var nome = document.getElementById("nova-comorb-nome").value;
-        var corIcone = document.getElementById("nova-comorb-corIcone").value;
-        var corRota = document.getElementById("nova-comorb-corRota").value;
-        var key = nome.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (key && !comorbidadesConfig[key]) {
-          // Validação simples da cor (aceita nomes em inglês ou #hex)
-          if (!corIcone.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/) || !corRota.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/)) {
-            alert("Formato de cor inválido. Use nomes em inglês (ex: red) ou código hexadecimal (ex: #FF0000).");
-            return;
-          }
-          comorbidadesConfig[key] = { 
-            nome: nome, 
-            corIcone: corIcone, 
-            corRotaPaciente: corRota 
-          };
-          atualizarLegenda();
-          saveData(); 
-          esconderModalComorb();
-        } else alert("Erro: Chave de nome inválida ou já existe.");
-      });
+      // 10️⃣ Lógica Modal Comorbidade
+      var modalComorbBackdrop = document.getElementById("modal-comorb-backdrop"); var formNovaComorbidade = document.getElementById("form-nova-comorbidade"); function esconderModalComorb() { modalComorbBackdrop.style.display = "none"; formNovaComorbidade.reset(); } document.getElementById("botao-comorb-cancelar").addEventListener("click", esconderModalComorb); formNovaComorbidade.addEventListener("submit", function(e) { e.preventDefault(); var nome = document.getElementById("nova-comorb-nome").value; var corIcone = document.getElementById("nova-comorb-corIcone").value; var corRota = document.getElementById("nova-comorb-corRota").value; var key = nome.toLowerCase().replace(/[^a-z0-9]/g, ''); if (key && !comorbidadesConfig[key]) { if (!corIcone.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/) || !corRota.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/)) { alert("Cor inválida."); return; } comorbidadesConfig[key] = { nome: nome, corIcone: corIcone, corRotaPaciente: corRota }; atualizarLegenda(); saveData(); esconderModalComorb(); } else alert("Nome/Chave inválida ou já existe."); });
 
-      // 11️⃣ Lógica do Modal de ACS (Área)
-      var modalAcsBackdrop = document.getElementById("modal-acs-backdrop");
-      var formNovoAcs = document.getElementById("form-novo-acs");
-      var tempAreaGeoJSON = null; 
-      
-      function mostrarModalAcs() { modalAcsBackdrop.style.display = "flex"; }
-      function esconderModalAcs() {
-        modalAcsBackdrop.style.display = "none";
-        formNovoAcs.reset();
-        tempAreaGeoJSON = null; 
-      }
-      document.getElementById("botao-acs-cancelar").addEventListener("click", esconderModalAcs);
-      
-      formNovoAcs.addEventListener("submit", function(e) {
-        e.preventDefault();
-        var nome = document.getElementById("nova-acs-nome").value;
-        var cor = document.getElementById("nova-acs-cor").value; 
-        var key = nome.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        
-        if (!key || !tempAreaGeoJSON) { 
-          alert("Erro: Nome ou Área inválida.");
-          return;
-        }
-        // Validação simples da cor
-        if (!cor.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/)) {
-            alert("Formato de cor inválido. Use nomes em inglês (ex: blue) ou código hexadecimal (ex: #0000FF).");
-            return;
-        }
-        if (!agentesConfig[key]) {
-          agentesConfig[key] = {
-            nome: nome,
-            cor: cor,
-            areasGeoJSON: [] 
-          };
-        } else if (!Array.isArray(agentesConfig[key].areasGeoJSON)) {
-            agentesConfig[key].areasGeoJSON = [];
-        }
+      // 11️⃣ Lógica Modal ACS (Área)
+      var modalAcsBackdrop = document.getElementById("modal-acs-backdrop"); var formNovoAcs = document.getElementById("form-novo-acs"); var tempAreaGeoJSON = null; function mostrarModalAcs() { modalAcsBackdrop.style.display = "flex"; } function esconderModalAcs() { modalAcsBackdrop.style.display = "none"; formNovoAcs.reset(); tempAreaGeoJSON = null; } document.getElementById("botao-acs-cancelar").addEventListener("click", esconderModalAcs); formNovoAcs.addEventListener("submit", function(e) { e.preventDefault(); var nome = document.getElementById("nova-acs-nome").value; var cor = document.getElementById("nova-acs-cor").value; var key = nome.toLowerCase().replace(/[^a-z0-9]/g, '_'); if (!key || !tempAreaGeoJSON) { alert("Nome ou Área inválida."); return; } if (!cor.match(/^(#[0-9a-fA-F]{3,6}|[a-zA-Z]+)$/)) { alert("Cor inválida."); return; } if (!agentesConfig[key]) { agentesConfig[key] = { nome: nome, cor: cor, areasGeoJSON: [] }; } else if (!Array.isArray(agentesConfig[key].areasGeoJSON)) { agentesConfig[key].areasGeoJSON = []; } agentesConfig[key].areasGeoJSON.push(tempAreaGeoJSON); desenharAreaAcs(key, tempAreaGeoJSON); atualizarLegenda(); saveData(); esconderModalAcs(); });
 
-        agentesConfig[key].areasGeoJSON.push(tempAreaGeoJSON); 
-        desenharAreaAcs(key, tempAreaGeoJSON); 
-        atualizarLegenda();
-        saveData(); 
-        esconderModalAcs();
-      });
+      // Listener botão remover popup área ACS
+      map.on('popupopen', function (e) { var popupNode = e.popup._contentNode; var btnRemover = popupNode.querySelector('.popup-remover-btn'); if (btnRemover) { L.DomEvent.off(btnRemover, 'click'); L.DomEvent.on(btnRemover, 'click', function() { var key = this.getAttribute('data-key'); var geojsonString = this.getAttribute('data-geojson'); if (key && geojsonString) { if (confirm(`Remover área de "${agentesConfig[key]?.nome || key}"?`)) { removerAreaAcsPorDados(key, geojsonString); } } else { console.error("Dados inválidos no botão remover."); } }); } });
 
       // 12️⃣ Inicialização
-      loadData(); // Carrega os dados salvos
-      carregarEdesenharAreas(); // Desenha as áreas carregadas
-      redesenharPacientes(); // Desenha os pacientes carregados
-      atualizarLegenda(); // Atualiza a legenda com os dados carregados
+      loadData();
+      carregarEdesenharAreas();
+      redesenharPacientes();
+      atualizarLegenda();
 
-    </script>
-</script>
-
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./service-worker.js')
-            .then((reg) => {
-              console.log('Service worker registered successfully:', reg.scope);
-            }).catch((err) => {
-              console.error('Service worker registration failed:', err);
-            });
-        });
+      // Listener GERAL de clique no mapa (MODIFICADO)
+      function onMapaClickGeral(e) {
+          // *** CORREÇÃO: Prioridade total ao modo paciente ***
+          if (modoAdicionarPacienteAtivo) {
+               // Ignora apenas cliques nos controles ou DENTRO de um popup
+               if (!e.originalEvent.target.closest(".leaflet-control") &&
+                   !e.originalEvent.target.closest(".leaflet-popup-content-wrapper"))
+               {
+                 // Fecha qualquer popup aberto antes de abrir o novo
+                 map.closePopup();
+                 abrirPopupPaciente(e);
+               }
+              // Não precisa reativar o modo aqui, ele só é desativado ao abrir o popup
+          }
+          // Se não estiver no modo paciente, este listener não faz nada,
+          // deixando o listener da área (que tem stopPropagation) agir.
       }
+      map.on('click', onMapaClickGeral); // Listener fica sempre ativo
+
+      // Registra o Service Worker
+      if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js').then(reg => console.log('SW ok:', reg.scope)).catch(err => console.error('SW falhou:', err)); }); }
+
     </script>
   </body>
 </html>
- 
